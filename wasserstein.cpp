@@ -52,12 +52,16 @@ class Vector {
 };
 
 int main(int argc, char const *argv[]) {
-    const char *filename1 = "imgA.jpg";
-    const char *filename2 = "imgB.jpg";
+    const char *filename1 = "../data/imgA.jpg";
+    const char *filename2 = "../data/imgB.jpg";
+    int iterations = 10;
     if (argc > 2) {
         filename1 = argv[1];
         filename2 = argv[2];
     }
+    if (argc > 3)
+        iterations = std::stoi(argv[3]);
+
     int x1, x2, y1, y2, n1, n2;
     unsigned char *data1 = stbi_load(filename1, &x1, &y1, &n1, 0);
     unsigned char *data2 = stbi_load(filename2, &x2, &y2, &n2, 0);
@@ -90,23 +94,24 @@ int main(int argc, char const *argv[]) {
     std::mt19937 gen{rd()};
     std::normal_distribution<> d{0, 1};
 
-    int iterations = 5;
     for (int i = 0; i < iterations; i++) {
-        // tirer une droite
+        // pick a line with random direction
         auto dir = Vector(d(gen), d(gen), d(gen));
         dir.normalize();
+
+        // for each pixel of both images calculate it's projection on the line
         std::vector<std::pair<double, int>> proj1(imageF.size()), proj2(imageG.size());
-        // pour chaque pixel calculer la projection sur la droite
         for (int j = 0; j < imageF.size(); ++j) {
             proj1[j] = {dir.dot(imageF[j]), j};
         }
         for (int j = 0; j < imageG.size(); ++j) {
             proj2[j] = {dir.dot(imageG[j]), j};
         }
-        // trier les projections
+
+        // sort projection arrays
         std::sort(proj1.begin(), proj1.end());
         std::sort(proj2.begin(), proj2.end());
-        // mettre a jour l'image
+        // update images
         for (int j = 0; j < imageF.size(); ++j) {
             imageF[proj1[j].second] += dir * (proj2[j].first - proj1[j].first);
         }
@@ -121,6 +126,7 @@ int main(int argc, char const *argv[]) {
     }
 
     stbi_write_png("out.png", x1, y1, 3, out.data(), 0);
+    std::cout << "Finished. Check out out.png\n";
 
     stbi_image_free(data1);
     stbi_image_free(data2);
